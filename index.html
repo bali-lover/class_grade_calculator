@@ -1,0 +1,1311 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>학급 전체 내신 예측 계산기</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 15px;
+            background-color: #f5f5f5;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            min-height: calc(100vh - 30px);
+        }
+
+        .header {
+            background-color: white;
+            padding: 10px 15px;
+            border-radius: 6px;
+            box-shadow: 0 1px 5px rgba(0,0,0,0.1);
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            margin: 0 0 4px 0;
+            font-size: 20px;
+            color: #333;
+        }
+
+        .header p {
+            font-size: 14px;
+            color: #666;
+            margin: 0;
+        }
+
+        .tabs {
+            display: flex;
+            background: white;
+            border-radius: 6px;
+            box-shadow: 0 1px 5px rgba(0,0,0,0.1);
+            margin-bottom: 15px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 10px 15px;
+            background: none;
+            border: none;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #6c757d;
+            border-radius: 6px;
+        }
+
+        .tab-btn.active {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .tab-content.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-section {
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+            box-shadow: 0 1px 5px rgba(0,0,0,0.1);
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .semester-section {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .semester-title {
+            background: #17a2b8;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin: -15px -15px 15px -15px;
+            font-weight: bold;
+            font-size: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .paste-area {
+            width: 100%;
+            height: 200px;
+            padding: 15px;
+            border: 2px dashed #ced4da;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            resize: vertical;
+            background: #fff;
+            margin-bottom: 15px;
+        }
+
+        .paste-area:focus {
+            outline: none;
+            border-color: #4facfe;
+            background: #f8f9ff;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .btn {
+            padding: 8px 14px;
+            margin: 3px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .btn-primary {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #138496;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #545b62;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        .btn-blue {
+            background: #007bff;
+            color: white;
+        }
+
+        .btn-blue:hover {
+            background: #0056b3;
+        }
+
+        .student-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid #dee2e6;
+        }
+
+        .student-table th {
+            background: #f8f9fa;
+            color: #333;
+            padding: 10px 8px;
+            font-size: 12px;
+            text-align: center;
+            font-weight: bold;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        .student-table td {
+            padding: 8px;
+            text-align: center;
+            border-bottom: 1px solid #dee2e6;
+            font-size: 12px;
+        }
+
+        .student-table tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        .prediction-input {
+            width: 60px;
+            padding: 4px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 11px;
+        }
+
+        .prediction-input:focus {
+            outline: none;
+            border-color: #4facfe;
+            box-shadow: 0 0 3px rgba(79, 172, 254, 0.3);
+        }
+
+        .subjects-container {
+            margin-top: 20px;
+        }
+
+        .subject-category {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #e9ecef;
+        }
+
+        .subject-category h4 {
+            color: #495057;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 8px;
+        }
+
+        .subject-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+        }
+
+        .subject-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+
+        .subject-item label {
+            font-weight: bold;
+            color: #495057;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .score-input {
+            width: 80px;
+            padding: 8px;
+            border: 2px solid #e9ecef;
+            border-radius: 5px;
+            text-align: center;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .score-input:focus {
+            outline: none;
+            border-color: #4facfe;
+            box-shadow: 0 0 3px rgba(79, 172, 254, 0.3);
+        }
+
+        .achievement-select {
+            width: 80px;
+            padding: 8px;
+            border: 2px solid #e9ecef;
+            border-radius: 5px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .achievement-select:focus {
+            outline: none;
+            border-color: #4facfe;
+        }
+
+        .achievement {
+            font-size: 18px;
+            font-weight: bold;
+            padding: 4px 8px;
+            border-radius: 4px;
+            min-width: 30px;
+            text-align: center;
+        }
+
+        .achievement.A { background: #28a745; color: white; }
+        .achievement.B { background: #17a2b8; color: white; }
+        .achievement.C { background: #ffc107; color: black; }
+        .achievement.D { background: #fd7e14; color: white; }
+        .achievement.E { background: #dc3545; color: white; }
+
+        .prediction-summary {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 6px;
+            margin: 20px 0;
+            border-left: 4px solid #17a2b8;
+        }
+
+        .prediction-summary .summary-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .prediction-summary .summary-item.total {
+            font-size: 1.2em;
+            font-weight: bold;
+            padding-top: 10px;
+            border-top: 2px solid #17a2b8;
+        }
+
+        .prediction-summary label {
+            color: #17a2b8;
+            font-weight: bold;
+        }
+
+        .prediction-summary span {
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .prediction-summary input {
+            width: 100px;
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .student-number {
+            font-weight: bold;
+            color: #495057;
+        }
+
+        .current-score {
+            color: #6c757d;
+        }
+
+        .predicted-score {
+            color: #17a2b8;
+            font-weight: bold;
+        }
+
+        .improvement {
+            font-weight: bold;
+        }
+
+        .improvement.positive {
+            color: #28a745;
+        }
+
+        .improvement.negative {
+            color: #dc3545;
+        }
+
+        .improvement.neutral {
+            color: #6c757d;
+        }
+
+        .summary-section {
+            background: white;
+            color: #333;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 15px;
+            border: 1px solid #dee2e6;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .summary-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+            border: 1px solid #dee2e6;
+        }
+
+        .summary-item h4 {
+            margin-bottom: 8px;
+            font-size: 1em;
+        }
+
+        .summary-item .value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #17a2b8;
+        }
+
+        .instructions {
+            background: #e7f3ff;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #0066cc;
+            margin-bottom: 20px;
+        }
+
+        .instructions h3 {
+            color: #0066cc;
+            margin-bottom: 8px;
+            font-size: 1.1em;
+        }
+
+        .table-container {
+            flex: 1;
+            overflow-y: auto;
+            border-radius: 6px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .student-table {
+                font-size: 10px;
+            }
+            
+            .student-table th,
+            .student-table td {
+                padding: 6px 4px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div>
+                <h1>🎓 학급 전체 내신 예측 계산기</h1>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="showCurrentTab()">현재 성적 입력</button>
+            <button class="tab-btn" onclick="showPredictionTab()">3학년 2학기 예측 및 분석</button>
+        </div>
+
+        <div id="currentTab" class="tab-content active">
+            <div class="form-section">
+                <div class="section-title">2학년 1학기부터 3학년 1학기까지 성적</div>
+                
+                <div class="semester-section">
+                    <div class="semester-title">
+                        <span>현재 성적 (2학년 1학기 ~ 3학년 1학기)</span>
+                        <span id="currentCount">0명 입력됨</span>
+                    </div>
+                    <textarea id="currentPasteArea" class="paste-area" 
+                        placeholder="학생 성적 데이터를 붙여넣으세요...&#10;&#10;예시:&#10;1    134.126    20.000    20.000    8.000    182.126&#10;2    144.401    20.000    20.000    8.000    192.401&#10;3    137.828    20.000    20.000    8.000    185.828&#10;..."></textarea>
+                    <div class="btn-group">
+                        <button class="btn btn-blue" onclick="parseCurrentGrades()">현재 성적 분석</button>
+                        <button class="btn btn-success" onclick="generatePredictionInputs()">3학년 2학기 예측 입력 생성</button>
+                        <button class="btn btn-secondary" onclick="clearCurrentData()">초기화</button>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table class="student-table">
+                        <thead>
+                            <tr>
+                                <th>번호</th>
+                                <th>교과활동</th>
+                                <th>출결</th>
+                                <th>봉사</th>
+                                <th>학교활동</th>
+                                <th>현재 총점</th>
+                            </tr>
+                        </thead>
+                        <tbody id="currentTableBody">
+                            <!-- 학생 데이터가 동적으로 생성됩니다 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="predictionTab" class="tab-content">
+            <!-- 상단 학생 선택 -->
+            <div class="form-section" style="margin-bottom: 20px;">
+                <div class="section-title">
+                    학생 선택 및 예측 성적 입력
+                    <div style="font-size: 14px; font-weight: normal;">
+                        <select id="studentSelect" onchange="selectStudent()">
+                            <option value="">학생 선택...</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 메인 콘텐츠 영역 (좌우 분할) -->
+            <div style="display: grid; grid-template-columns: 6fr 4fr; gap: 20px; height: calc(100vh - 200px);">
+                <!-- 좌측: 예측 입력 영역 -->
+                <div class="form-section" style="margin-bottom: 0; overflow-y: auto;">
+                    <div class="semester-title" style="margin: -15px -15px 20px -15px;">
+                        <span>3학년 2학기 과목별 예측 성적</span>
+                        <span id="selectedStudentName">학생을 선택하세요</span>
+                    </div>
+                    
+                    <div class="subjects-container" style="margin-top: 0;">
+                        <div class="subject-category" style="margin-bottom: 15px; padding: 15px;">
+                            <h4 style="margin-bottom: 12px; font-size: 16px;">3학년 2학기 과목별 예측 성적</h4>
+                            <div class="subject-grid" style="grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px;">
+                                <div class="subject-item" style="padding: 8px;">
+                                    <label style="font-size: 11px;">국어</label>
+                                    <input type="number" id="korean" class="score-input" style="width: 50px; padding: 4px;" min="0" max="100" oninput="updateAchievement('korean')" placeholder="점수">
+                                    <span class="achievement" id="korean_achievement" style="font-size: 12px;">-</span>
+                                </div>
+                                <div class="subject-item" style="padding: 8px;">
+                                    <label style="font-size: 11px;">사회</label>
+                                    <input type="number" id="social" class="score-input" style="width: 50px; padding: 4px;" min="0" max="100" oninput="updateAchievement('social')" placeholder="점수">
+                                    <span class="achievement" id="social_achievement" style="font-size: 12px;">-</span>
+                                </div>
+                                <div class="subject-item" style="padding: 8px;">
+                                    <label style="font-size: 11px;">역사</label>
+                                    <input type="number" id="history" class="score-input" style="width: 50px; padding: 4px;" min="0" max="100" oninput="updateAchievement('history')" placeholder="점수">
+                                    <span class="achievement" id="history_achievement" style="font-size: 12px;">-</span>
+                                </div>
+                                <div class="subject-item" style="padding: 8px;">
+                                    <label style="font-size: 11px;">수학</label>
+                                    <input type="number" id="math" class="score-input" style="width: 50px; padding: 4px;" min="0" max="100" oninput="updateAchievement('math')" placeholder="점수">
+                                    <span class="achievement" id="math_achievement" style="font-size: 12px;">-</span>
+                                </div>
+                                <div class="subject-item" style="padding: 8px;">
+                                    <label style="font-size: 11px;">과학</label>
+                                    <input type="number" id="science" class="score-input" style="width: 50px; padding: 4px;" min="0" max="100" oninput="updateAchievement('science')" placeholder="점수">
+                                    <span class="achievement" id="science_achievement" style="font-size: 12px;">-</span>
+                                </div>
+                                <div class="subject-item" style="padding: 8px;">
+                                    <label style="font-size: 11px;">기술가정</label>
+                                    <input type="number" id="tech" class="score-input" style="width: 50px; padding: 4px;" min="0" max="100" oninput="updateAchievement('tech')" placeholder="점수">
+                                    <span class="achievement" id="tech_achievement" style="font-size: 12px;">-</span>
+                                </div>
+                                <div class="subject-item" style="padding: 8px;">
+                                    <label style="font-size: 11px;">영어</label>
+                                    <input type="number" id="english" class="score-input" style="width: 50px; padding: 4px;" min="0" max="100" oninput="updateAchievement('english')" placeholder="점수">
+                                    <span class="achievement" id="english_achievement" style="font-size: 12px;">-</span>
+                                </div>
+                                <div class="subject-item" style="padding: 8px;">
+                                    <label style="font-size: 11px;">체육</label>
+                                    <select id="pe" class="achievement-select" style="width: 50px; padding: 4px; font-size: 11px;" onchange="calculatePredictedScore()">
+                                        <option value="">선택</option>
+                                        <option value="A">A</option>
+                                        <option value="B">B</option>
+                                        <option value="C">C</option>
+                                    </select>
+                                </div>
+                                <div class="subject-item" style="padding: 8px;">
+                                    <label style="font-size: 11px;">음악</label>
+                                    <select id="music" class="achievement-select" style="width: 50px; padding: 4px; font-size: 11px;" onchange="calculatePredictedScore()">
+                                        <option value="">선택</option>
+                                        <option value="A">A</option>
+                                        <option value="B">B</option>
+                                        <option value="C">C</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="btn-group" style="margin-top: 15px;">
+                            <button class="btn btn-primary" onclick="savePrediction()">현재 학생 저장</button>
+                            <button class="btn btn-success" onclick="calculateIndividualResult()">개별 분석</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 우측: 분석 결과 영역 -->
+                <div class="result-section" id="individualResult" style="display: none; overflow-y: auto; margin-bottom: 0;">
+                    <!-- 헤더 섹션 -->
+                    <div style="background: linear-gradient(135deg, #17a2b8 0%, #138496 100%); color: white; padding: 15px; border-radius: 8px 8px 0 0; position: relative; overflow: hidden;">
+                        <div style="position: absolute; top: -30px; right: -30px; width: 60px; height: 60px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
+                        <div style="position: absolute; bottom: -20px; left: -20px; width: 40px; height: 40px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
+                        <div style="position: relative; z-index: 2;">
+                            <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                                <div style="background: rgba(255,255,255,0.2); padding: 6px 10px; border-radius: 15px; margin-right: 10px;">
+                                    <span style="font-size: 12px; font-weight: bold;">📊 개별 분석</span>
+                                </div>
+                                <h3 id="analyzedStudentName" style="margin: 0; font-size: 18px;">-번 학생</h3>
+                            </div>
+                            <p style="opacity: 0.9; margin: 0; font-size: 12px;">3학년 2학기 예측 성적을 바탕으로 한 상세 분석 결과입니다</p>
+                        </div>
+                    </div>
+
+                    <!-- 성적 요약 카드 -->
+                    <div style="background: white; padding: 15px; border-radius: 0 0 8px 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 15px;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                            <div style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); padding: 12px; border-radius: 8px; text-align: center; border-left: 3px solid #6c757d;">
+                                <div style="font-size: 10px; color: #6c757d; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">CURRENT</div>
+                                <div style="font-size: 18px; font-weight: bold; color: #495057; margin-bottom: 2px;"><span id="studentCurrentTotal">0.000</span></div>
+                                <div style="font-size: 11px; color: #6c757d;">현재 내신</div>
+                            </div>
+                            
+                            <div style="background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); padding: 12px; border-radius: 8px; text-align: center; border-left: 3px solid #17a2b8;">
+                                <div style="font-size: 10px; color: #17a2b8; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">PREDICTED</div>
+                                <div style="font-size: 18px; font-weight: bold; color: #17a2b8; margin-bottom: 2px;"><span id="studentPredictedTotal">0.000</span></div>
+                                <div style="font-size: 11px; color: #17a2b8;">예측 내신</div>
+                            </div>
+                            
+                            <div style="background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%); padding: 12px; border-radius: 8px; text-align: center; border-left: 3px solid #ff9800;">
+                                <div style="font-size: 10px; color: #f57c00; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">CHANGE</div>
+                                <div style="font-size: 18px; font-weight: bold; margin-bottom: 2px;"><span id="studentImprovement">+0.000</span></div>
+                                <div style="font-size: 11px; color: #f57c00;">상승폭</div>
+                            </div>
+                            
+                            <div style="background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%); padding: 12px; border-radius: 8px; text-align: center; border-left: 3px solid #9c27b0;">
+                                <div style="font-size: 10px; color: #7b1fa2; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">3-2 GRADE</div>
+                                <div style="font-size: 18px; font-weight: bold; color: #7b1fa2; margin-bottom: 2px;"><span id="studentPredictionGrade">0.000</span></div>
+                                <div style="font-size: 11px; color: #7b1fa2;">교과 예측</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 상세 분석 -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div style="background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                            <div style="background: linear-gradient(135deg, #4caf50 0%, #45a049 100%); color: white; padding: 10px;">
+                                <div style="display: flex; align-items: center;">
+                                    <span style="font-size: 16px; margin-right: 8px;">📋</span>
+                                    <h5 style="margin: 0; font-size: 14px; font-weight: bold;">현재 상황</h5>
+                                </div>
+                            </div>
+                            <div style="padding: 12px;">
+                                <div id="currentAnalysis" style="font-size: 12px; line-height: 1.5; color: #495057;">
+                                    <!-- 현재 상황 분석 -->
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div style="background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                            <div style="background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%); color: white; padding: 10px;">
+                                <div style="display: flex; align-items: center;">
+                                    <span style="font-size: 16px; margin-right: 8px;">🔮</span>
+                                    <h5 style="margin: 0; font-size: 14px; font-weight: bold;">예측 결과</h5>
+                                </div>
+                            </div>
+                            <div style="padding: 12px;">
+                                <div id="predictionAnalysis" style="font-size: 12px; line-height: 1.5; color: #495057;">
+                                    <!-- 예측 결과 분석 -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        let studentData = [];
+        let predictionData = [];
+        let currentSelectedStudent = null;
+        let studentPredictions = {}; // 학생별 예측 데이터 저장
+
+        const subjects = ['korean', 'social', 'history', 'math', 'science', 'tech', 'english'];
+        const peArtsSubjects = ['pe', 'music'];
+
+        // 로컬스토리지 키 상수
+        const STORAGE_KEYS = {
+            STUDENT_DATA: 'gradeCalculator_studentData',
+            PREDICTIONS: 'gradeCalculator_predictions'
+        };
+
+        // 페이지 로드 시 데이터 복원
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDataFromStorage();
+        });
+
+        // 로컬스토리지에서 데이터 불러오기
+        function loadDataFromStorage() {
+            try {
+                // 학생 데이터 불러오기
+                const savedStudentData = localStorage.getItem(STORAGE_KEYS.STUDENT_DATA);
+                if (savedStudentData) {
+                    studentData = JSON.parse(savedStudentData);
+                    if (studentData.length > 0) {
+                        displayCurrentGrades();
+                        document.getElementById('currentCount').textContent = `${studentData.length}명 입력됨`;
+                        
+                        // 성적 데이터를 텍스트 영역에도 표시
+                        const pasteArea = document.getElementById('currentPasteArea');
+                        const dataText = studentData.map(student => 
+                            `${student.number}\t${student.subject}\t${student.attendance}\t${student.volunteer}\t${student.activity}\t${student.total}`
+                        ).join('\n');
+                        pasteArea.value = dataText;
+                    }
+                }
+
+                // 예측 데이터 불러오기
+                const savedPredictions = localStorage.getItem(STORAGE_KEYS.PREDICTIONS);
+                if (savedPredictions) {
+                    studentPredictions = JSON.parse(savedPredictions);
+                }
+
+                console.log('데이터를 로컬스토리지에서 불러왔습니다.');
+            } catch (error) {
+                console.error('로컬스토리지에서 데이터 불러오기 실패:', error);
+            }
+        }
+
+        // 로컬스토리지에 데이터 저장
+        function saveDataToStorage() {
+            try {
+                localStorage.setItem(STORAGE_KEYS.STUDENT_DATA, JSON.stringify(studentData));
+                localStorage.setItem(STORAGE_KEYS.PREDICTIONS, JSON.stringify(studentPredictions));
+                console.log('데이터를 로컬스토리지에 저장했습니다.');
+            } catch (error) {
+                console.error('로컬스토리지 저장 실패:', error);
+            }
+        }
+
+        // 로컬스토리지 데이터 삭제
+        function clearStorageData() {
+            try {
+                localStorage.removeItem(STORAGE_KEYS.STUDENT_DATA);
+                localStorage.removeItem(STORAGE_KEYS.PREDICTIONS);
+                console.log('로컬스토리지 데이터를 삭제했습니다.');
+            } catch (error) {
+                console.error('로컬스토리지 삭제 실패:', error);
+            }
+        }
+
+        function parseCurrentGrades() {
+            const pasteArea = document.getElementById('currentPasteArea');
+            const data = pasteArea.value.trim();
+            
+            if (!data) {
+                alert('성적 데이터를 입력해주세요.');
+                return;
+            }
+
+            try {
+                const lines = data.split('\n').filter(line => line.trim());
+                const students = [];
+                
+                lines.forEach(line => {
+                    // 탭이나 여러 공백으로 분리
+                    const values = line.trim().split(/\s+/).map(v => v.trim());
+                    
+                    if (values.length >= 6) {
+                        const studentNum = parseInt(values[0]);
+                        const subject = parseFloat(values[1]);
+                        const attendance = parseFloat(values[2]);
+                        const volunteer = parseFloat(values[3]);
+                        const activity = parseFloat(values[4]);
+                        const total = parseFloat(values[5]);
+                        
+                        if (!isNaN(studentNum) && !isNaN(subject) && !isNaN(attendance) && 
+                            !isNaN(volunteer) && !isNaN(activity) && !isNaN(total)) {
+                            students.push({
+                                number: studentNum,
+                                subject: subject,
+                                attendance: attendance,
+                                volunteer: volunteer,
+                                activity: activity,
+                                total: total
+                            });
+                        }
+                    }
+                });
+
+                if (students.length === 0) {
+                    alert('올바른 형식의 데이터가 없습니다.');
+                    return;
+                }
+
+                // 번호순으로 정렬
+                students.sort((a, b) => a.number - b.number);
+                studentData = students;
+                
+                displayCurrentGrades();
+                document.getElementById('currentCount').textContent = `${students.length}명 입력됨`;
+                
+                // 로컬스토리지에 저장
+                saveDataToStorage();
+                
+                alert(`${students.length}명의 현재 성적을 입력했습니다.`);
+
+            } catch (error) {
+                alert('데이터 처리 중 오류가 발생했습니다.');
+                console.error(error);
+            }
+        }
+
+        function displayCurrentGrades() {
+            const tbody = document.getElementById('currentTableBody');
+            tbody.innerHTML = '';
+
+            studentData.forEach(student => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td class="student-number">${student.number}</td>
+                    <td>${student.subject.toFixed(3)}</td>
+                    <td>${student.attendance.toFixed(1)}</td>
+                    <td>${student.volunteer.toFixed(1)}</td>
+                    <td>${student.activity.toFixed(1)}</td>
+                    <td class="current-score">${student.total.toFixed(1)}</td>
+                `;
+            });
+        }
+
+        function generatePredictionInputs() {
+            if (studentData.length === 0) {
+                alert('먼저 현재 성적을 입력해주세요.');
+                return;
+            }
+
+            // 학생 선택 드롭다운 생성
+            const studentSelect = document.getElementById('studentSelect');
+            studentSelect.innerHTML = '<option value="">학생 선택...</option>';
+            
+            studentData.forEach(student => {
+                const option = document.createElement('option');
+                option.value = student.number;
+                option.textContent = `${student.number}번`;
+                studentSelect.appendChild(option);
+            });
+
+            // 예측 현황 테이블 초기화
+            updatePredictionSummaryTable();
+
+            // 기존 예측 데이터가 있으면 자동으로 첫 번째 학생 선택
+            if (Object.keys(studentPredictions).length > 0) {
+                const firstStudentWithPrediction = Object.keys(studentPredictions)[0];
+                studentSelect.value = firstStudentWithPrediction;
+                selectStudent();
+            }
+
+            // 예측 탭으로 이동
+            showTab('prediction');
+        }
+
+        function selectStudent() {
+            const studentSelect = document.getElementById('studentSelect');
+            const studentNumber = parseInt(studentSelect.value);
+            
+            if (!studentNumber) {
+                document.getElementById('selectedStudentName').textContent = '학생을 선택하세요';
+                clearPredictionForm();
+                currentSelectedStudent = null;
+                return;
+            }
+
+            currentSelectedStudent = studentNumber;
+            document.getElementById('selectedStudentName').textContent = `${studentNumber}번 학생`;
+
+            // 기존 예측 데이터가 있으면 로드
+            if (studentPredictions[studentNumber]) {
+                loadPredictionData(studentPredictions[studentNumber]);
+            } else {
+                clearPredictionForm();
+            }
+        }
+
+        function clearPredictionForm() {
+            // 모든 입력 필드 초기화
+            subjects.forEach(subject => {
+                const input = document.getElementById(subject);
+                const achievement = document.getElementById(subject + '_achievement');
+                if (input) input.value = '';
+                if (achievement) {
+                    achievement.textContent = '-';
+                    achievement.className = 'achievement';
+                }
+            });
+            
+            peArtsSubjects.forEach(subject => {
+                const input = document.getElementById(subject);
+                if (input) input.value = '';
+            });
+
+            // 예측 점수 초기화
+            const predictedScore = document.getElementById('predictedSubjectScore');
+            if (predictedScore) predictedScore.textContent = '0.0';
+        }
+
+        function loadPredictionData(data) {
+            // 일반 교과
+            subjects.forEach(subject => {
+                if (data[subject]) {
+                    document.getElementById(subject).value = data[subject];
+                    updateAchievement(subject);
+                }
+            });
+            
+            // 예체능
+            peArtsSubjects.forEach(subject => {
+                if (data[subject]) {
+                    document.getElementById(subject).value = data[subject];
+                }
+            });
+
+            // 기타활동은 자동 계산되므로 불러오기 불필요
+
+            calculatePredictedScore();
+        }
+
+        function updateAchievement(subject) {
+            const scoreInput = document.getElementById(subject);
+            const achievementSpan = document.getElementById(subject + '_achievement');
+            const score = parseFloat(scoreInput.value);
+
+            if (isNaN(score) || score === '') {
+                achievementSpan.textContent = '-';
+                achievementSpan.className = 'achievement';
+            } else {
+                let achievement;
+                if (score >= 90) achievement = 'A';
+                else if (score >= 80) achievement = 'B';
+                else if (score >= 70) achievement = 'C';
+                else if (score >= 60) achievement = 'D';
+                else achievement = 'E';
+
+                achievementSpan.textContent = achievement;
+                achievementSpan.className = `achievement ${achievement}`;
+            }
+
+            calculatePredictedScore();
+        }
+
+        function calculatePredictedScore() {
+            // 일반교과 점수 계산 (1학기당 30점)
+            let regularSubjectSum = 0;
+            let regularSubjectCount = 0;
+
+            subjects.forEach(subject => {
+                const score = parseFloat(document.getElementById(subject).value);
+                if (!isNaN(score) && score > 0) {
+                    regularSubjectSum += score;
+                    regularSubjectCount++;
+                }
+            });
+
+            // 예체능 점수 계산 (1학기당 7.5점)
+            let peArtsSum = 0;
+            let peArtsCount = 0;
+
+            peArtsSubjects.forEach(subject => {
+                const achievement = document.getElementById(subject).value;
+                if (achievement) {
+                    let score;
+                    if (achievement === 'A') score = 100;
+                    else if (achievement === 'B') score = 85;
+                    else if (achievement === 'C') score = 75;
+                    
+                    if (score) {
+                        peArtsSum += score;
+                        peArtsCount++;
+                    }
+                }
+            });
+
+            // 일반교과: 1학기당 30점으로 계산
+            const regularAverage = regularSubjectCount > 0 ? regularSubjectSum / regularSubjectCount : 0;
+            const regularScore = regularAverage * 30 / 100; // 1학기 30점으로 환산
+
+            // 예체능: 1학기당 7.5점으로 계산
+            const peArtsAverage = peArtsCount > 0 ? peArtsSum / peArtsCount : 0;
+            const peArtsScore = peArtsAverage * 7.5 / 100; // 1학기 7.5점으로 환산
+
+            // 3-2학기 교과활동 점수만 계산 (37.5점 만점)
+            const semesterSubjectScore = regularScore + peArtsScore;
+
+            document.getElementById('predictedSubjectScore').textContent = semesterSubjectScore.toFixed(1);
+        }
+
+        function savePrediction() {
+            if (!currentSelectedStudent) {
+                alert('학생을 선택해주세요.');
+                return;
+            }
+
+            // 3-2학기는 교과활동만 예측, 출결/봉사/학교활동은 예측하지 않음
+            const predictionData = {};
+
+            // 일반교과 데이터 저장
+            subjects.forEach(subject => {
+                const score = parseFloat(document.getElementById(subject).value);
+                if (!isNaN(score)) {
+                    predictionData[subject] = score;
+                }
+            });
+
+            // 예체능 데이터 저장
+            peArtsSubjects.forEach(subject => {
+                const achievement = document.getElementById(subject).value;
+                if (achievement) {
+                    predictionData[subject] = achievement;
+                }
+            });
+
+            studentPredictions[currentSelectedStudent] = predictionData;
+            updatePredictionSummaryTable();
+            
+            // 로컬스토리지에 저장
+            saveDataToStorage();
+            
+            alert(`${currentSelectedStudent}번 학생의 예측 성적이 저장되었습니다.`);
+        }
+
+        function applyToAll() {
+            if (!currentSelectedStudent || !studentPredictions[currentSelectedStudent]) {
+                alert('먼저 현재 학생의 예측 성적을 저장해주세요.');
+                return;
+            }
+
+            const baseData = studentPredictions[currentSelectedStudent];
+            
+            studentData.forEach(student => {
+                if (student.number !== currentSelectedStudent) {
+                    studentPredictions[student.number] = { ...baseData };
+                }
+            });
+
+            updatePredictionSummaryTable();
+            
+            // 로컬스토리지에 저장
+            saveDataToStorage();
+            
+            alert('모든 학생에게 동일한 예측 성적이 적용되었습니다.');
+        }
+
+        function updatePredictionSummaryTable() {
+            // 예측 요약 테이블이 제거되었으므로 이 함수는 더 이상 필요하지 않음
+            // 빈 함수로 유지하여 호출 시 오류를 방지
+        }
+
+        function calculateIndividualResult() {
+            if (!currentSelectedStudent) {
+                alert('학생을 선택해주세요.');
+                return;
+            }
+
+            const prediction = studentPredictions[currentSelectedStudent];
+            if (!prediction) {
+                alert('예측 성적을 먼저 저장해주세요.');
+                return;
+            }
+
+            const student = studentData.find(s => s.number === currentSelectedStudent);
+            if (!student) {
+                alert('해당 학생의 현재 성적을 찾을 수 없습니다.');
+                return;
+            }
+
+            // 현재 내신 점수
+            const currentTotal = student.total;
+            
+            // 교과활동 점수 계산
+            const currentSubjectScore4Semester = student.subject;
+            const currentSubjectScore3Semester = currentSubjectScore4Semester * 3 / 4;
+
+            // 3-2학기 예측 교과활동 점수 계산
+            let predictionSubjectScore = 0;
+            let regularSum = 0, regularCount = 0;
+            let peArtsSum = 0, peArtsCount = 0;
+
+            subjects.forEach(subject => {
+                if (prediction[subject]) {
+                    regularSum += prediction[subject];
+                    regularCount++;
+                }
+            });
+
+            peArtsSubjects.forEach(subject => {
+                if (prediction[subject]) {
+                    let score;
+                    if (prediction[subject] === 'A') score = 100;
+                    else if (prediction[subject] === 'B') score = 85;
+                    else if (prediction[subject] === 'C') score = 75;
+                    
+                    if (score) {
+                        peArtsSum += score;
+                        peArtsCount++;
+                    }
+                }
+            });
+
+            const regularScore = regularCount > 0 ? (regularSum / regularCount) * 30 / 100 : 0;
+            const peArtsScore = peArtsCount > 0 ? (peArtsSum / peArtsCount) * 7.5 / 100 : 0;
+            predictionSubjectScore = regularScore + peArtsScore;
+
+            // 최종 계산
+            const finalSubjectScore = currentSubjectScore3Semester + predictionSubjectScore;
+            const finalOtherScore = currentTotal - currentSubjectScore4Semester;
+            const finalPredictedTotal = finalSubjectScore + finalOtherScore;
+            const improvement = finalPredictedTotal - currentTotal;
+
+            // 결과 표시
+            document.getElementById('analyzedStudentName').textContent = `${currentSelectedStudent}번 학생`;
+            document.getElementById('studentCurrentTotal').textContent = currentTotal.toFixed(3);
+            document.getElementById('studentPredictedTotal').textContent = finalPredictedTotal.toFixed(3);
+            document.getElementById('studentImprovement').textContent = (improvement >= 0 ? '+' : '') + improvement.toFixed(3);
+            document.getElementById('studentPredictionGrade').textContent = predictionSubjectScore.toFixed(3);
+
+            // 상승폭에 따른 색상 설정
+            const improvementElement = document.getElementById('studentImprovement');
+            if (improvement > 0) {
+                improvementElement.style.color = '#28a745';
+            } else if (improvement < 0) {
+                improvementElement.style.color = '#dc3545';
+            } else {
+                improvementElement.style.color = '#6c757d';
+            }
+
+            // 상세 분석
+            const semesterAverage = currentSubjectScore3Semester / 3; // 3학기 평균
+            const currentAnalysis = document.getElementById('currentAnalysis');
+            currentAnalysis.innerHTML = `
+                • 교과활동: ${currentSubjectScore4Semester.toFixed(3)}점 (4학기 환산)<br>
+                • 실제 3학기: ${currentSubjectScore3Semester.toFixed(3)}점<br>
+                • 학기 평균: ${semesterAverage.toFixed(3)}점 (학기당)<br>
+                • 출결/봉사/학교: ${finalOtherScore.toFixed(1)}점<br>
+                • 총점: ${currentTotal.toFixed(1)}점
+            `;
+
+            const predictionAnalysis = document.getElementById('predictionAnalysis');
+            predictionAnalysis.innerHTML = `
+                • 3-2 교과활동: ${predictionSubjectScore.toFixed(3)}점<br>
+                • 최종 교과활동: ${finalSubjectScore.toFixed(3)}점 (4학기)<br>
+                • 출결/봉사/학교: ${finalOtherScore.toFixed(1)}점 (변동없음)<br>
+                • 예측 총점: ${finalPredictedTotal.toFixed(1)}점<br>
+                • 상승폭: ${(improvement >= 0 ? '+' : '') + improvement.toFixed(1)}점
+            `;
+
+            // 결과 섹션 표시
+            document.getElementById('individualResult').style.display = 'block';
+        }
+
+        // 이 함수는 더 이상 사용되지 않음 (전체 결과 탭이 제거됨)
+        function calculateAllFinalResults() {
+            alert('개별 분석 기능을 사용해주세요. 학생을 선택하고 "개별 분석" 버튼을 클릭하세요.');
+        }
+
+        function clearAllPredictionData() {
+            studentPredictions = {};
+            updatePredictionSummaryTable();
+            clearPredictionForm();
+            alert('모든 예측 데이터가 초기화되었습니다.');
+        }
+
+        function displayResults() {
+            if (predictionData.length === 0) return;
+
+            // 현재 순위 계산
+            const currentRanked = [...predictionData].sort((a, b) => b.currentTotal - a.currentTotal);
+            const predictedRanked = [...predictionData].sort((a, b) => b.predictedTotal - a.predictedTotal);
+            
+            // 순위 정보 추가
+            currentRanked.forEach((student, index) => {
+                student.currentRank = index + 1;
+            });
+            
+            predictedRanked.forEach((student, index) => {
+                student.predictedRank = index + 1;
+            });
+
+            // 결과 테이블 생성 (존재하지 않을 수 있으므로 체크)
+            const tbody = document.getElementById('resultTableBody');
+            if (!tbody) return;
+            
+            tbody.innerHTML = '';
+
+            // 번호순으로 정렬하여 표시
+            const sortedForDisplay = [...predictionData].sort((a, b) => a.number - b.number);
+            
+            sortedForDisplay.forEach(student => {
+                const row = tbody.insertRow();
+                const rankChange = student.currentRank - student.predictedRank;
+                const rankChangeText = rankChange > 0 ? `↑${rankChange}` : rankChange < 0 ? `↓${Math.abs(rankChange)}` : '→';
+                const rankChangeClass = rankChange > 0 ? 'positive' : rankChange < 0 ? 'negative' : 'neutral';
+                const improvementClass = student.improvement > 0 ? 'positive' : student.improvement < 0 ? 'negative' : 'neutral';
+                
+                row.innerHTML = `
+                    <td class="student-number">${student.number}</td>
+                    <td class="current-score">${student.currentTotal.toFixed(1)}</td>
+                    <td class="predicted-score">${student.predictedTotal.toFixed(1)}</td>
+                    <td class="improvement ${improvementClass}">${student.improvement >= 0 ? '+' : ''}${student.improvement.toFixed(1)}</td>
+                    <td>${student.currentRank}</td>
+                    <td>${student.predictedRank}</td>
+                    <td class="improvement ${rankChangeClass}">${rankChangeText}</td>
+                `;
+            });
+
+            // 요약 통계 계산 (요소들이 존재하지 않을 수 있으므로 체크)
+            const totalStudents = predictionData.length;
+            const currentAverage = predictionData.reduce((sum, s) => sum + s.currentTotal, 0) / totalStudents;
+            const predictedAverage = predictionData.reduce((sum, s) => sum + s.predictedTotal, 0) / totalStudents;
+            const averageImprovement = predictedAverage - currentAverage;
+
+            const totalStudentsEl = document.getElementById('totalStudents');
+            const currentAverageEl = document.getElementById('currentAverage');
+            const predictedAverageEl = document.getElementById('predictedAverage');
+            const averageImprovementEl = document.getElementById('averageImprovement');
+
+            if (totalStudentsEl) totalStudentsEl.textContent = totalStudents;
+            if (currentAverageEl) currentAverageEl.textContent = currentAverage.toFixed(1);
+            if (predictedAverageEl) predictedAverageEl.textContent = predictedAverage.toFixed(1);
+            if (averageImprovementEl) averageImprovementEl.textContent = (averageImprovement >= 0 ? '+' : '') + averageImprovement.toFixed(1);
+        }
+
+        function clearCurrentData() {
+            if (confirm('현재 성적 데이터를 모두 삭제하시겠습니까?')) {
+                document.getElementById('currentPasteArea').value = '';
+                document.getElementById('currentTableBody').innerHTML = '';
+                document.getElementById('currentCount').textContent = '0명 입력됨';
+                studentData = [];
+                studentPredictions = {};
+                
+                // 로컬스토리지에서도 삭제
+                clearStorageData();
+                
+                alert('모든 데이터가 삭제되었습니다.');
+            }
+        }
+
+        // 이 함수는 더 이상 사용되지 않음 (해당 HTML 요소들이 제거됨)
+        function clearPredictionData() {
+            predictionData = [];
+        }
+
+        function showCurrentTab() {
+            // 모든 탭 컨텐츠와 버튼 초기화
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // 현재 성적 입력 탭 활성화
+            document.getElementById('currentTab').classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        function showPredictionTab() {
+            // 모든 탭 컨텐츠와 버튼 초기화
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // 예측 및 분석 탭 활성화
+            document.getElementById('predictionTab').classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // 기존 showTab 함수도 유지 (다른 곳에서 호출될 수 있음)
+        function showTab(tabName) {
+            if (tabName === 'current') {
+                showCurrentTab();
+            } else if (tabName === 'prediction') {
+                showPredictionTab();
+            }
+        }
+    </script>
+</body>
+</html>
