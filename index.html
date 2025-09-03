@@ -498,7 +498,7 @@
                         <span id="currentCount">0명 입력됨</span>
                     </div>
                     <textarea id="currentPasteArea" class="paste-area" 
-                        placeholder="학생 성적 데이터를 붙여넣으세요...&#10;&#10;예시:&#10;1    134.126    20.000    20.000    8.000    182.126&#10;2    144.401    20.000    20.000    8.000    192.401&#10;3    137.828    20.000    20.000    8.000    185.828&#10;..."></textarea>
+                        placeholder="학생 성적 데이터를 붙여넣으세요...&#10;&#10;새로운 형식:&#10;번호 2학년점수 3학년점수 예체능점수 합계 학급석차 학년석차 총점&#10;&#10;예시:&#10;1    48.526    25.600    25.500    58.400    5    12    182.126&#10;2    52.401    27.800    26.200    60.000    3    8     192.401&#10;3    50.828    26.400    25.800    59.200    4    10    185.828&#10;..."></textarea>
                     <div class="btn-group">
                         <button class="btn btn-blue" onclick="parseCurrentGrades()">현재 성적 분석</button>
                         <button class="btn btn-success" onclick="generatePredictionInputs()">3학년 2학기 예측 입력 생성</button>
@@ -511,10 +511,12 @@
                         <thead>
                             <tr>
                                 <th>번호</th>
-                                <th>교과활동</th>
-                                <th>출결</th>
-                                <th>봉사</th>
-                                <th>학교활동</th>
+                                <th>2학년점수</th>
+                                <th>3학년점수</th>
+                                <th>예체능점수</th>
+                                <th>합계</th>
+                                <th>학급석차</th>
+                                <th>학년석차</th>
                                 <th>현재 총점</th>
                             </tr>
                         </thead>
@@ -586,6 +588,11 @@
                                     <label style="font-size: 11px;">영어</label>
                                     <input type="number" id="english" class="score-input" style="width: 50px; padding: 4px;" min="0" max="100" oninput="updateAchievement('english')" placeholder="점수">
                                     <span class="achievement" id="english_achievement" style="font-size: 12px;">-</span>
+                                </div>
+                                <div class="subject-item" style="padding: 8px;">
+                                    <label style="font-size: 11px;">외국어</label>
+                                    <input type="number" id="foreign" class="score-input" style="width: 50px; padding: 4px;" min="0" max="100" oninput="updateAchievement('foreign')" placeholder="점수">
+                                    <span class="achievement" id="foreign_achievement" style="font-size: 12px;">-</span>
                                 </div>
                                 <div class="subject-item" style="padding: 8px;">
                                     <label style="font-size: 11px;">체육</label>
@@ -703,7 +710,7 @@
         let currentSelectedStudent = null;
         let studentPredictions = {}; // 학생별 예측 데이터 저장
 
-        const subjects = ['korean', 'social', 'history', 'math', 'science', 'tech', 'english'];
+        const subjects = ['korean', 'social', 'history', 'math', 'science', 'tech', 'english', 'foreign'];
         const peArtsSubjects = ['pe', 'music'];
 
         // 로컬스토리지 키 상수
@@ -731,7 +738,7 @@
                         // 성적 데이터를 텍스트 영역에도 표시
                         const pasteArea = document.getElementById('currentPasteArea');
                         const dataText = studentData.map(student => 
-                            `${student.number}\t${student.subject}\t${student.attendance}\t${student.volunteer}\t${student.activity}\t${student.total}`
+                            `${student.number}\t${student.grade2Score}\t${student.grade3Score}\t${student.peArtsScore}\t${student.otherScore}\t${student.classRank}\t${student.gradeRank}\t${student.total}`
                         ).join('\n');
                         pasteArea.value = dataText;
                     }
@@ -788,22 +795,27 @@
                     // 탭이나 여러 공백으로 분리
                     const values = line.trim().split(/\s+/).map(v => v.trim());
                     
-                    if (values.length >= 6) {
+                    if (values.length >= 8) {
                         const studentNum = parseInt(values[0]);
-                        const subject = parseFloat(values[1]);
-                        const attendance = parseFloat(values[2]);
-                        const volunteer = parseFloat(values[3]);
-                        const activity = parseFloat(values[4]);
-                        const total = parseFloat(values[5]);
+                        const grade2Score = parseFloat(values[1]);
+                        const grade3Score = parseFloat(values[2]);
+                        const peArtsScore = parseFloat(values[3]);
+                        const otherScore = parseFloat(values[4]);
+                        const classRank = parseInt(values[5]);
+                        const gradeRank = parseInt(values[6]);
+                        const total = parseFloat(values[7]);
                         
-                        if (!isNaN(studentNum) && !isNaN(subject) && !isNaN(attendance) && 
-                            !isNaN(volunteer) && !isNaN(activity) && !isNaN(total)) {
+                        if (!isNaN(studentNum) && !isNaN(grade2Score) && !isNaN(grade3Score) && 
+                            !isNaN(peArtsScore) && !isNaN(otherScore) && !isNaN(classRank) &&
+                            !isNaN(gradeRank) && !isNaN(total)) {
                             students.push({
                                 number: studentNum,
-                                subject: subject,
-                                attendance: attendance,
-                                volunteer: volunteer,
-                                activity: activity,
+                                grade2Score: grade2Score,
+                                grade3Score: grade3Score,
+                                peArtsScore: peArtsScore,
+                                otherScore: otherScore,
+                                classRank: classRank,
+                                gradeRank: gradeRank,
                                 total: total
                             });
                         }
@@ -841,10 +853,12 @@
                 const row = tbody.insertRow();
                 row.innerHTML = `
                     <td class="student-number">${student.number}</td>
-                    <td>${student.subject.toFixed(3)}</td>
-                    <td>${student.attendance.toFixed(1)}</td>
-                    <td>${student.volunteer.toFixed(1)}</td>
-                    <td>${student.activity.toFixed(1)}</td>
+                    <td>${student.grade2Score.toFixed(3)}</td>
+                    <td>${student.grade3Score.toFixed(3)}</td>
+                    <td>${student.peArtsScore.toFixed(3)}</td>
+                    <td>${student.otherScore.toFixed(1)}</td>
+                    <td>${student.classRank}</td>
+                    <td>${student.gradeRank}</td>
                     <td class="current-score">${student.total.toFixed(1)}</td>
                 `;
             });
@@ -970,49 +984,78 @@
         }
 
         function calculatePredictedScore() {
-            // 일반교과 점수 계산 (1학기당 30점)
+            // 3-2학기 교과활동 점수 계산 (30점 만점)
             let regularSubjectSum = 0;
             let regularSubjectCount = 0;
+            let achievementSum = 0;
 
             subjects.forEach(subject => {
                 const score = parseFloat(document.getElementById(subject).value);
                 if (!isNaN(score) && score > 0) {
                     regularSubjectSum += score;
                     regularSubjectCount++;
-                }
-            });
 
-            // 예체능 점수 계산 (1학기당 7.5점)
-            let peArtsSum = 0;
-            let peArtsCount = 0;
-
-            peArtsSubjects.forEach(subject => {
-                const achievement = document.getElementById(subject).value;
-                if (achievement) {
-                    let score;
-                    if (achievement === 'A') score = 100;
-                    else if (achievement === 'B') score = 85;
-                    else if (achievement === 'C') score = 75;
+                    // 성취도 점수 계산 (A=5, B=4, C=3, D=2, E=1)
+                    let achievementScore;
+                    if (score >= 90) achievementScore = 5;
+                    else if (score >= 80) achievementScore = 4;
+                    else if (score >= 70) achievementScore = 3;
+                    else if (score >= 60) achievementScore = 2;
+                    else achievementScore = 1;
                     
-                    if (score) {
-                        peArtsSum += score;
-                        peArtsCount++;
-                    }
+                    achievementSum += achievementScore;
                 }
             });
 
-            // 일반교과: 1학기당 30점으로 계산
-            const regularAverage = regularSubjectCount > 0 ? regularSubjectSum / regularSubjectCount : 0;
-            const regularScore = regularAverage * 30 / 100; // 1학기 30점으로 환산
+            if (regularSubjectCount === 0) {
+                document.getElementById('predictedSubjectScore').textContent = '0.0';
+                return;
+            }
 
-            // 예체능: 1학기당 7.5점으로 계산
-            const peArtsAverage = peArtsCount > 0 ? peArtsSum / peArtsCount : 0;
-            const peArtsScore = peArtsAverage * 7.5 / 100; // 1학기 7.5점으로 환산
+            // 교과활동: 기본 10점 + (성취도 평균 × 2) + (원점수 평균 × 0.1)
+            const baseScore = 10;
+            const achievementAverage = achievementSum / regularSubjectCount;
+            const achievementScore = achievementAverage * 2;
+            const rawScoreAverage = regularSubjectSum / regularSubjectCount;
+            const rawScoreBonus = rawScoreAverage * 0.1;
 
-            // 3-2학기 교과활동 점수만 계산 (37.5점 만점)
-            const semesterSubjectScore = regularScore + peArtsScore;
+            const semesterSubjectScore = baseScore + achievementScore + rawScoreBonus;
 
             document.getElementById('predictedSubjectScore').textContent = semesterSubjectScore.toFixed(1);
+        }
+
+        // 예체능 점수 계산 (6과목 → 8과목 환산)
+        function calculatePeArtsScore(currentPeArtsScore, newPeAchievements) {
+            // 현재 6과목 성취도 분포 추정
+            const currentScore = currentPeArtsScore - 10; // 기본점수 제거
+            const currentRatio = currentScore / 20; // 가중비율
+            const currentWeightedSum = currentRatio * 18; // 6과목 가중합계
+            
+            // 점수대별 평균 분포 가정
+            let estimatedA, estimatedB, estimatedC;
+            if (currentRatio >= 0.85) { // 상위권 (25.5점 이상)
+                estimatedA = 4; estimatedB = 2; estimatedC = 0;
+            } else if (currentRatio >= 0.70) { // 중위권 (24.0점 이상)
+                estimatedA = 3; estimatedB = 2; estimatedC = 1;
+            } else { // 하위권
+                estimatedA = 2; estimatedB = 2; estimatedC = 2;
+            }
+            
+            // 3-2학기 2과목 추가
+            let totalA = estimatedA, totalB = estimatedB, totalC = estimatedC;
+            
+            newPeAchievements.forEach(achievement => {
+                if (achievement === 'A') totalA++;
+                else if (achievement === 'B') totalB++;
+                else if (achievement === 'C') totalC++;
+            });
+            
+            // 최종 8과목 점수 계산
+            const finalWeightedSum = totalA * 3 + totalB * 2 + totalC * 1;
+            const finalRatio = finalWeightedSum / 24; // 8과목 기준
+            const finalScore = 10 + finalRatio * 20;
+            
+            return finalScore;
         }
 
         function savePrediction() {
@@ -1097,44 +1140,63 @@
             // 현재 내신 점수
             const currentTotal = student.total;
             
-            // 교과활동 점수 계산
-            const currentSubjectScore4Semester = student.subject;
-            const currentSubjectScore3Semester = currentSubjectScore4Semester * 3 / 4;
+            // 새로운 데이터 구조 사용
+            const current2ndGrade = student.grade2Score; // 2학년 60점 (그대로 유지)
+            const current3rdGradeTotal = student.grade3Score; // 3학년 60점 만점 (이미 환산됨)
+            const current3rdGrade1Sem = current3rdGradeTotal / 2; // 3-1학기 실제 점수 (30점)
+            const currentPeArts = student.peArtsScore; // 현재 예체능 (6과목)
+            const currentOtherScore = currentTotal - (current2ndGrade + current3rdGradeTotal + currentPeArts); // 기타 = 총점 - 합계
 
-            // 3-2학기 예측 교과활동 점수 계산
-            let predictionSubjectScore = 0;
+            // 3-2학기 교과활동 점수 계산 (30점 만점)
+            let prediction3rdGrade2Sem = 0;
             let regularSum = 0, regularCount = 0;
-            let peArtsSum = 0, peArtsCount = 0;
+            let achievementSum = 0;
 
             subjects.forEach(subject => {
                 if (prediction[subject]) {
-                    regularSum += prediction[subject];
+                    const score = prediction[subject];
+                    regularSum += score;
                     regularCount++;
+                    
+                    // 성취도 점수 계산
+                    let achievementScore;
+                    if (score >= 90) achievementScore = 5;
+                    else if (score >= 80) achievementScore = 4;
+                    else if (score >= 70) achievementScore = 3;
+                    else if (score >= 60) achievementScore = 2;
+                    else achievementScore = 1;
+                    
+                    achievementSum += achievementScore;
                 }
             });
 
+            if (regularCount > 0) {
+                // 교과활동: 기본 10점 + (성취도 평균 × 2) + (원점수 평균 × 0.1)
+                const baseScore = 10;
+                const achievementAverage = achievementSum / regularCount;
+                const achievementScore = achievementAverage * 2;
+                const rawScoreAverage = regularSum / regularCount;
+                const rawScoreBonus = rawScoreAverage * 0.1;
+                
+                prediction3rdGrade2Sem = baseScore + achievementScore + rawScoreBonus;
+            }
+
+            // 예체능 점수 계산 (6과목 → 8과목)
+            const newPeAchievements = [];
             peArtsSubjects.forEach(subject => {
                 if (prediction[subject]) {
-                    let score;
-                    if (prediction[subject] === 'A') score = 100;
-                    else if (prediction[subject] === 'B') score = 85;
-                    else if (prediction[subject] === 'C') score = 75;
-                    
-                    if (score) {
-                        peArtsSum += score;
-                        peArtsCount++;
-                    }
+                    newPeAchievements.push(prediction[subject]);
                 }
             });
-
-            const regularScore = regularCount > 0 ? (regularSum / regularCount) * 30 / 100 : 0;
-            const peArtsScore = peArtsCount > 0 ? (peArtsSum / peArtsCount) * 7.5 / 100 : 0;
-            predictionSubjectScore = regularScore + peArtsScore;
+            
+            const finalPeArtsScore = calculatePeArtsScore(currentPeArts, newPeAchievements);
 
             // 최종 계산
-            const finalSubjectScore = currentSubjectScore3Semester + predictionSubjectScore;
-            const finalOtherScore = currentTotal - currentSubjectScore4Semester;
-            const finalPredictedTotal = finalSubjectScore + finalOtherScore;
+            const final2ndGrade = current2ndGrade; // 2학년은 그대로
+            const final3rdGrade = current3rdGrade1Sem + prediction3rdGrade2Sem; // 3학년 = 1학기 + 2학기
+            const finalOtherScore = currentOtherScore; // 기타활동은 변동 없음
+            
+            const finalPredictedTotal = final2ndGrade + final3rdGrade + finalPeArtsScore + finalOtherScore;
             const improvement = finalPredictedTotal - currentTotal;
 
             // 결과 표시
@@ -1142,7 +1204,7 @@
             document.getElementById('studentCurrentTotal').textContent = currentTotal.toFixed(3);
             document.getElementById('studentPredictedTotal').textContent = finalPredictedTotal.toFixed(3);
             document.getElementById('studentImprovement').textContent = (improvement >= 0 ? '+' : '') + improvement.toFixed(3);
-            document.getElementById('studentPredictionGrade').textContent = predictionSubjectScore.toFixed(3);
+            document.getElementById('studentPredictionGrade').textContent = prediction3rdGrade2Sem.toFixed(3);
 
             // 상승폭에 따른 색상 설정
             const improvementElement = document.getElementById('studentImprovement');
@@ -1155,21 +1217,22 @@
             }
 
             // 상세 분석
-            const semesterAverage = currentSubjectScore3Semester / 3; // 3학기 평균
             const currentAnalysis = document.getElementById('currentAnalysis');
             currentAnalysis.innerHTML = `
-                • 교과활동: ${currentSubjectScore4Semester.toFixed(3)}점 (4학기 환산)<br>
-                • 실제 3학기: ${currentSubjectScore3Semester.toFixed(3)}점<br>
-                • 학기 평균: ${semesterAverage.toFixed(3)}점 (학기당)<br>
-                • 출결/봉사/학교: ${finalOtherScore.toFixed(1)}점<br>
-                • 총점: ${currentTotal.toFixed(1)}점
+                • 2학년 점수: ${current2ndGrade.toFixed(3)}점 (60점 만점)<br>
+                • 3학년 현재: ${current3rdGradeTotal.toFixed(3)}점 (60점 만점)<br>
+                • 3-1학기 실제: ${current3rdGrade1Sem.toFixed(3)}점 (30점)<br>
+                • 예체능 점수: ${currentPeArts.toFixed(3)}점 (6과목)<br>
+                • 기타 점수: ${currentOtherScore.toFixed(1)}점 (출결/봉사/학교)<br>
+                • 현재 총점: ${currentTotal.toFixed(1)}점
             `;
 
             const predictionAnalysis = document.getElementById('predictionAnalysis');
             predictionAnalysis.innerHTML = `
-                • 3-2 교과활동: ${predictionSubjectScore.toFixed(3)}점<br>
-                • 최종 교과활동: ${finalSubjectScore.toFixed(3)}점 (4학기)<br>
-                • 출결/봉사/학교: ${finalOtherScore.toFixed(1)}점 (변동없음)<br>
+                • 3-2학기 예측: ${prediction3rdGrade2Sem.toFixed(3)}점<br>
+                • 3학년 최종: ${final3rdGrade.toFixed(3)}점 (60점 만점)<br>
+                • 예체능 최종: ${finalPeArtsScore.toFixed(3)}점 (8과목)<br>
+                • 기타 점수: ${finalOtherScore.toFixed(1)}점 (변동없음)<br>
                 • 예측 총점: ${finalPredictedTotal.toFixed(1)}점<br>
                 • 상승폭: ${(improvement >= 0 ? '+' : '') + improvement.toFixed(1)}점
             `;
