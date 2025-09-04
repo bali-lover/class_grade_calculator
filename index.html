@@ -935,7 +935,7 @@
             });
 
             // 예측 점수 초기화
-            const predictedScore = document.getElementById('predictedSubjectScore');
+            const predictedScore = document.getElementById('studentPredictionGrade');
             if (predictedScore) predictedScore.textContent = '0.0';
         }
 
@@ -1008,7 +1008,8 @@
             });
 
             if (regularSubjectCount === 0) {
-                document.getElementById('predictedSubjectScore').textContent = '0.0';
+                const predictedScore = document.getElementById('studentPredictionGrade');
+            if (predictedScore) predictedScore.textContent = '0.0';
                 return;
             }
 
@@ -1021,41 +1022,44 @@
 
             const semesterSubjectScore = baseScore + achievementScore + rawScoreBonus;
 
-            document.getElementById('predictedSubjectScore').textContent = semesterSubjectScore.toFixed(1);
+            const predictedScore = document.getElementById('studentPredictionGrade');
+            if (predictedScore) predictedScore.textContent = semesterSubjectScore.toFixed(1);
         }
 
         // 예체능 점수 계산 (6과목 → 8과목 환산)
         function calculatePeArtsScore(currentPeArtsScore, newPeAchievements) {
-            // 현재 6과목 성취도 분포 추정
-            const currentScore = currentPeArtsScore - 10; // 기본점수 제거
-            const currentRatio = currentScore / 20; // 가중비율
-            const currentWeightedSum = currentRatio * 18; // 6과목 가중합계
-            
-            // 점수대별 평균 분포 가정
-            let estimatedA, estimatedB, estimatedC;
-            if (currentRatio >= 0.85) { // 상위권 (25.5점 이상)
-                estimatedA = 4; estimatedB = 2; estimatedC = 0;
-            } else if (currentRatio >= 0.70) { // 중위권 (24.0점 이상)
-                estimatedA = 3; estimatedB = 2; estimatedC = 1;
-            } else { // 하위권
-                estimatedA = 2; estimatedB = 2; estimatedC = 2;
+            // 현재 예체능이 만점(30점)인 경우의 처리
+            if (currentPeArtsScore >= 29.9) {
+                // 추가 과목이 모두 A라면 여전히 만점
+                const allA = newPeAchievements.every(achievement => achievement === 'A');
+                if (allA && newPeAchievements.length === 2) {
+                    return 30.0;
+                }
             }
             
-            // 3-2학기 2과목 추가
-            let totalA = estimatedA, totalB = estimatedB, totalC = estimatedC;
+            // 현재 6과목에서 기본점수 제거 후 성취도별 가중치 계산
+            const currentScore = currentPeArtsScore - 10; // 기본 10점 제거
+            const currentRatio = currentScore / 20; // 0~1 사이 비율
             
+            // 6과목의 가중합을 추정 (6과목 × 3점 = 18점 만점)
+            const current6SubjectWeightedSum = currentRatio * 18;
+            
+            // 새로 추가될 2과목의 가중합 계산
+            let new2SubjectWeightedSum = 0;
             newPeAchievements.forEach(achievement => {
-                if (achievement === 'A') totalA++;
-                else if (achievement === 'B') totalB++;
-                else if (achievement === 'C') totalC++;
+                if (achievement === 'A') new2SubjectWeightedSum += 3;
+                else if (achievement === 'B') new2SubjectWeightedSum += 2;
+                else if (achievement === 'C') new2SubjectWeightedSum += 1;
             });
             
-            // 최종 8과목 점수 계산
-            const finalWeightedSum = totalA * 3 + totalB * 2 + totalC * 1;
-            const finalRatio = finalWeightedSum / 24; // 8과목 기준
+            // 8과목 총 가중합 (8과목 × 3점 = 24점 만점)
+            const total8SubjectWeightedSum = current6SubjectWeightedSum + new2SubjectWeightedSum;
+            const finalRatio = total8SubjectWeightedSum / 24;
+            
+            // 최종 점수 = 기본 10점 + 성취도 비례 20점
             const finalScore = 10 + finalRatio * 20;
             
-            return finalScore;
+            return Math.min(finalScore, 30); // 최대 30점으로 제한
         }
 
         function savePrediction() {
@@ -1218,23 +1222,32 @@
 
             // 상세 분석
             const currentAnalysis = document.getElementById('currentAnalysis');
+            // 3학년 학기 평균 계산 (30점 만점 기준)
+            const grade3Average = current3rdGrade1Sem; // 현재는 3-1학기만 있으므로 그대로 사용
+            
             currentAnalysis.innerHTML = `
                 • 2학년 점수: ${current2ndGrade.toFixed(3)}점 (60점 만점)<br>
                 • 3학년 현재: ${current3rdGradeTotal.toFixed(3)}점 (60점 만점)<br>
                 • 3-1학기 실제: ${current3rdGrade1Sem.toFixed(3)}점 (30점)<br>
+                • <strong>3학년 학기평균: ${grade3Average.toFixed(3)}점 (30점)</strong><br>
                 • 예체능 점수: ${currentPeArts.toFixed(3)}점 (6과목)<br>
                 • 기타 점수: ${currentOtherScore.toFixed(1)}점 (출결/봉사/학교)<br>
                 • 현재 총점: ${currentTotal.toFixed(1)}점
             `;
 
             const predictionAnalysis = document.getElementById('predictionAnalysis');
+            // 3-2학기와 3-1학기(현재 평균) 비교 계산
+            const semesterImprovement = prediction3rdGrade2Sem - grade3Average;
+            const improvementText = semesterImprovement >= 0 ? `+${semesterImprovement.toFixed(3)}` : semesterImprovement.toFixed(3);
+            
             predictionAnalysis.innerHTML = `
-                • 3-2학기 예측: ${prediction3rdGrade2Sem.toFixed(3)}점<br>
+                • 3-2학기 예측: ${prediction3rdGrade2Sem.toFixed(3)}점 (30점)<br>
+                • <strong>학기간 비교: ${improvementText}점</strong> (vs 3학년 평균)<br>
                 • 3학년 최종: ${final3rdGrade.toFixed(3)}점 (60점 만점)<br>
                 • 예체능 최종: ${finalPeArtsScore.toFixed(3)}점 (8과목)<br>
                 • 기타 점수: ${finalOtherScore.toFixed(1)}점 (변동없음)<br>
                 • 예측 총점: ${finalPredictedTotal.toFixed(1)}점<br>
-                • 상승폭: ${(improvement >= 0 ? '+' : '') + improvement.toFixed(1)}점
+                • 총 상승폭: ${(improvement >= 0 ? '+' : '') + improvement.toFixed(1)}점
             `;
 
             // 결과 섹션 표시
